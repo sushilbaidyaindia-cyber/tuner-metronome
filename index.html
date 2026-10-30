@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>টিউনার ও মেট্রোনোম</title>
+<style>
+  :root{--bg:#12141c;--card:#1c2030;--text:#eef0f6;--muted:#8b92a8;--accent:#ffb020;--sam:#ff5a5f;--beat:#4da3ff}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,"Noto Sans Bengali",sans-serif;padding:16px;max-width:560px;margin:auto}
+  h1{font-size:22px;margin:4px 0 16px;text-align:center}
+  .page{display:none}.page.show{display:block}
+  .card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:14px}
+  .label{font-size:13px;color:var(--muted);margin-bottom:8px}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  button{font:inherit;color:var(--text);background:#2a3048;border:2px solid transparent;border-radius:12px;padding:12px 8px;cursor:pointer}
+  button[aria-pressed="true"]{border-color:var(--accent);background:#3a3320;color:var(--accent);font-weight:700}
+  .back{background:none;border:none;color:var(--muted);padding:6px 0;margin-bottom:6px}
+  .home button{width:100%;padding:34px 10px;font-size:26px;font-weight:700;margin-bottom:14px;border-radius:20px;background:var(--card)}
+  .keys button{width:calc(25% - 6px);padding:18px 2px;font-size:20px;font-weight:700}
+  [hidden]{display:none!important}
+  .wide{width:100%;margin-top:10px}
+  .go{width:100%;font-size:22px;font-weight:700;padding:18px;background:var(--accent);color:#000;border-radius:16px}
+  .go.on{background:var(--sam);color:#fff}
+  .beats{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+  .grp{display:flex;gap:6px;padding:6px;border-radius:12px;background:#151927}
+  .b{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;background:#2a3048;color:var(--muted)}
+  .b.sam{border:2px solid var(--sam)}
+  .b.act{background:var(--beat);color:#fff}
+  .b.sam.act{background:var(--sam)}
+  .matras button{width:calc(20% - 7px);min-width:52px;font-size:18px}
+  .bpm{text-align:center}
+  .bpm .num{font-size:64px;font-weight:800;line-height:1}
+  .bpm .unit{color:var(--muted);font-size:13px}
+  input[type=range]{width:100%;height:36px;accent-color:var(--accent)}
+  .adj{display:flex;gap:8px;margin-top:6px}
+  .adj button{flex:1;font-size:18px}
+</style>
+</head>
+<body>
+
+<!-- হোম -->
+<div id="pgHome" class="page home show">
+  <h1>🎼 সঙ্গীত সহায়ক</h1>
+  <button id="goTuner">🎵 টিউনার</button>
+  <button id="goMetro">🥁 মেট্রোনোম</button>
+</div>
+
+<!-- টিউনার -->
+<div id="pgTuner" class="page">
+  <button class="back" data-back>← Home</button>
+
+  <div id="tunerPick">
+    <h1 id="pickTitle" tabindex="-1">Tuner. Choose a scale</h1>
+    <div class="row keys" id="keys"></div>
+  </div>
+
+  <div id="tunerPlay" hidden>
+    <h1 id="playTitle" tabindex="-1">Scale C</h1>
+    <button id="toneBtn" class="go">■ Stop</button>
+    <div class="label" style="margin-top:14px">সপ্তক</div>
+    <div class="row seg" id="octs" role="group" aria-label="সপ্তক"></div>
+    <button id="changeScale" class="wide">Change scale</button>
+  </div>
+</div>
+
+<!-- মেট্রোনোম -->
+<div id="pgMetro" class="page">
+  <button class="back" data-back>← হোম</button>
+  <h1>🥁 মেট্রোনোম</h1>
+
+  <div class="card">
+    <div class="label">কত মাত্রা? (প্রথমটি "টিক", বাকিগুলো "টক")</div>
+    <div class="row matras" id="matras" role="group" aria-label="মাত্রা সংখ্যা"></div>
+    <div class="beats" id="beats" aria-hidden="true"></div>
+  </div>
+
+  <div class="card bpm">
+    <div class="label">গতি</div>
+    <div><span class="num" id="bpmNum" aria-live="polite">100</span> <span class="unit">BPM</span></div>
+    <input type="range" id="bpm" min="30" max="300" value="100" aria-label="BPM">
+    <div class="adj">
+      <button id="m5" aria-label="৫ কমাও">−৫</button>
+      <button id="m1" aria-label="১ কমাও">−১</button>
+      <button id="p1" aria-label="১ বাড়াও">+১</button>
+      <button id="p5" aria-label="৫ বাড়াও">+৫</button>
+    </div>
+  </div>
+
+  <button id="play" class="go">▶ শুরু</button>
+</div>
+
+<script>
+const $ = id=>document.getElementById(id);
+const bn = n=>String(n).replace(/\d/g,d=>'০১২৩৪৫৬৭৮৯'[d]);
+let ctx=null;
+function getCtx(){
+  if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)();
+  if(ctx.state==='suspended') ctx.resume();
+  return ctx;
+}
+
+/* ---------- পেজ নেভিগেশন ---------- */
+function show(id){
+  ['pgHome','pgTuner','pgMetro'].forEach(p=>$(p).classList.toggle('show',p===id));
+  window.scrollTo(0,0);
+}
+function leaveAll(){ stopMetro(); stopTone(true); }
+$('goTuner').onclick=()=>{leaveAll(); show('pgTuner'); showView('pick'); $('pickTitle').focus();};
+$('goMetro').onclick=()=>{leaveAll(); show('pgMetro');};
+document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{leaveAll(); show('pgHome');});
+
+/* ================= টিউনার ================= */
+const KEYS=['C','C sharp','D','D sharp','E','F','F sharp','G','G sharp','A','A sharp','B'];
+let key=0, oct=4, tone={};
+const OCTS=[{o:3,t:'মন্দ্র সপ্তক'},{o:4,t:'মধ্য সপ্তক'},{o:5,t:'তার সপ্তক'}];
+
+function keyFreq(k){ return 440*Math.pow(2,(12*(oct+1)+k-69)/12); } // A=440
+
+function buildOcts(){
+  const el=$('octs'); el.innerHTML='';
+  OCTS.forEach((it,idx)=>{
+    const b=document.createElement('button');
+    const on=it.o===oct;
+    b.textContent=it.t; b.style.flex='1';
+    b.setAttribute('aria-pressed',on);
+    b.setAttribute('aria-label',it.t+(on?', নির্বাচিত':''));
+    b.onclick=()=>{
+      oct=it.o; buildOcts();
+      if(tone.o) tone.o.frequency.setTargetAtTime(keyFreq(key),ctx.currentTime,0.01);
+      $('octs').children[idx].focus();
+    };
+    el.appendChild(b);
+  });
+}
+
+function buildKeys(){
+  const el=$('keys'); el.innerHTML='';
+  KEYS.forEach((t,i)=>{
+    const b=document.createElement('button');
+    b.textContent=t;
+    b.onclick=()=>chooseKey(i);
+    el.appendChild(b);
+  });
+}
+function showView(v){
+  $('tunerPick').hidden = v!=='pick';
+  $('tunerPlay').hidden = v!=='play';
+}
+function chooseKey(i){
+  key=i;
+  showView('play');
+  startTone();
+  $('playTitle').focus();
+}
+function refreshTuner(){
+  $('toneBtn').textContent = tone.o ? '■ Stop' : '▶ Play';
+  $('toneBtn').classList.toggle('on',!!tone.o);
+  $('playTitle').textContent = 'Scale '+KEYS[key]+(tone.o?', sound playing':', stopped');
+}
+function startTone(){
+  const c=getCtx(); stopTone(true);
+  const o=c.createOscillator(), g=c.createGain();
+  o.type='sine'; o.frequency.value=keyFreq(key);
+  g.gain.setValueAtTime(0.0001,c.currentTime);
+  g.gain.linearRampToValueAtTime(0.5,c.currentTime+0.04);
+  o.connect(g); g.connect(c.destination);
+  o.start();
+  tone={o,g};
+  refreshTuner();
+}
+function stopTone(quick){
+  if(!tone.o) return;
+  const {o,g}=tone;
+  g.gain.cancelScheduledValues(ctx.currentTime);
+  g.gain.setTargetAtTime(0,ctx.currentTime,quick?0.005:0.04);
+  try{o.stop(ctx.currentTime+(quick?0.05:0.2));}catch(e){}
+  tone={};
+  refreshTuner();
+}
+$('toneBtn').onclick=()=>{ if(tone.o) stopTone(); else startTone(); };
+$('changeScale').onclick=()=>{ stopTone(true); showView('pick'); $('pickTitle').focus(); };
+
+/* ================= মেট্রোনোম ================= */
+const GROUPS={2:[2],3:[3],4:[4],5:[3,2],6:[3,3],7:[3,2,2],8:[4,4],9:[3,3,3],10:[2,3,2,3],12:[4,4,4],16:[4,4,4,4]};
+const MATRAS=[2,3,4,5,6,7,8,9,10,12,16];
+
+let matra=4, bpm=100, playing=false, nextTime=0, beatIdx=0, timer=null, raf=null;
+const queue=[]; let beatEls=[];
+
+function buildMatras(){
+  const el=$('matras'); el.innerHTML='';
+  MATRAS.forEach(n=>{
+    const b=document.createElement('button');
+    b.textContent=bn(n); b.setAttribute('aria-label',bn(n)+' মাত্রা'+(n===matra?', নির্বাচিত':''));
+    b.setAttribute('aria-pressed',n===matra);
+    b.onclick=()=>{setMatra(n); $('matras').children[MATRAS.indexOf(n)].focus();};
+    el.appendChild(b);
+  });
+}
+function setMatra(n){ matra=n; beatIdx=0; queue.length=0; buildMatras(); buildBeats(); }
+function buildBeats(){
+  const el=$('beats'); el.innerHTML=''; beatEls=[]; let n=0;
+  (GROUPS[matra]||[matra]).forEach(g=>{
+    const gd=document.createElement('div'); gd.className='grp';
+    for(let i=0;i<g;i++){
+      const d=document.createElement('div');
+      d.className='b'+(n===0?' sam':''); d.textContent=bn(n+1);
+      gd.appendChild(d); beatEls.push(d); n++;
+    }
+    el.appendChild(gd);
+  });
+}
+function blip(time,freq,amp,dur){
+  const o=ctx.createOscillator(), g=ctx.createGain();
+  o.type='triangle'; o.frequency.setValueAtTime(freq,time);
+  o.frequency.exponentialRampToValueAtTime(freq*0.85,time+dur);
+  g.gain.setValueAtTime(0.0001,time);
+  g.gain.exponentialRampToValueAtTime(amp,time+0.002);
+  g.gain.exponentialRampToValueAtTime(0.0001,time+dur);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(time); o.stop(time+dur+0.02);
+}
+function scheduler(){
+  while(nextTime<ctx.currentTime+0.15){
+    if(beatIdx===0) blip(nextTime,1600,1,0.08); else blip(nextTime,900,0.7,0.06);
+    queue.push({time:nextTime,beat:beatIdx});
+    nextTime+=60/bpm;
+    beatIdx=(beatIdx+1)%matra;
+  }
+}
+function draw(){
+  if(!playing) return;
+  while(queue.length&&queue[0].time<=ctx.currentTime){
+    const q=queue.shift();
+    beatEls.forEach(e=>e.classList.remove('act'));
+    if(beatEls[q.beat]) beatEls[q.beat].classList.add('act');
+  }
+  raf=requestAnimationFrame(draw);
+}
+function startMetro(){
+  getCtx();
+  playing=true; beatIdx=0; queue.length=0;
+  nextTime=ctx.currentTime+0.08;
+  timer=setInterval(scheduler,25); draw();
+  $('play').textContent='■ থামাও'; $('play').classList.add('on');
+}
+function stopMetro(){
+  if(!playing) return;
+  playing=false; clearInterval(timer); cancelAnimationFrame(raf);
+  beatEls.forEach(e=>e.classList.remove('act'));
+  $('play').textContent='▶ শুরু'; $('play').classList.remove('on');
+}
+function setBpm(v){ bpm=Math.max(30,Math.min(300,Math.round(v))); $('bpm').value=bpm; $('bpmNum').textContent=bn(bpm); }
+$('play').onclick=()=>playing?stopMetro():startMetro();
+$('bpm').oninput=e=>setBpm(+e.target.value);
+$('m5').onclick=()=>setBpm(bpm-5); $('m1').onclick=()=>setBpm(bpm-1);
+$('p1').onclick=()=>setBpm(bpm+1); $('p5').onclick=()=>setBpm(bpm+5);
+
+/* শুরু */
+buildKeys(); buildOcts(); buildMatras(); buildBeats(); setBpm(100);
+</script>
+</body>
+</html>
