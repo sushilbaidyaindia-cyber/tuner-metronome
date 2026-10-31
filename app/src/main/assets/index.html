@@ -105,10 +105,15 @@ function show(id){
   ['pgHome','pgTuner','pgMetro'].forEach(p=>$(p).classList.toggle('show',p===id));
   window.scrollTo(0,0);
 }
-function leaveAll(){ stopMetro(); stopTone(true); }
-$('goTuner').onclick=()=>{leaveAll(); show('pgTuner'); showView('pick'); $('pickTitle').focus();};
+function leaveAll(){ try{stopMetro();}catch(e){} try{stopTone(true);}catch(e){} }
+function goNativeHome(){
+  leaveAll();
+  try{ if(window.Android && Android.goHome){ Android.goHome(); return; } }catch(e){}
+  show('pgHome');
+}
+$('goTuner').onclick=()=>{leaveAll(); show('pgTuner'); showView('pick'); try{$('pickTitle').focus();}catch(e){}};
 $('goMetro').onclick=()=>{leaveAll(); show('pgMetro');};
-document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{leaveAll(); show('pgHome');});
+document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>goNativeHome());
 
 /* ================= টিউনার ================= */
 const KEYS=['C','C sharp','D','D sharp','E','F','F sharp','G','G sharp','A','A sharp','B'];
@@ -259,6 +264,22 @@ $('p1').onclick=()=>setBpm(bpm+1); $('p5').onclick=()=>setBpm(bpm+5);
 
 /* শুরু */
 buildKeys(); buildOcts(); buildMatras(); buildBeats(); setBpm(100);
+/* Open page from Android: index.html#tuner or #metro */
+(function(){
+  var page = (location.hash||'').replace(/^#/,'').toLowerCase();
+  try{
+    var q = new URLSearchParams(location.search).get('p');
+    if(q) page = q.toLowerCase();
+  }catch(e){}
+  if(page==='tuner' || page==='tune'){
+    show('pgTuner'); showView('pick');
+    setTimeout(function(){ try{$('pickTitle').focus();}catch(e){} }, 50);
+  } else if(page==='metro' || page==='metronome'){
+    show('pgMetro');
+  }
+})();
+window.addEventListener('pagehide', function(){ leaveAll(); });
+document.addEventListener('visibilitychange', function(){ if(document.hidden) leaveAll(); });
 window.addEventListener('pagehide',()=>leaveAll());
 document.addEventListener('visibilitychange',()=>{if(document.hidden)leaveAll();});
 </script>
