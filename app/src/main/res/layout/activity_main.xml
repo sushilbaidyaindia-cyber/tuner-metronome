@@ -4,7 +4,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="24dp"
-    android:gravity="center_horizontal"
+    android:gravity="center"
     android:background="#12141c">
 
     <TextView
@@ -15,26 +15,26 @@
         android:textSize="26sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:layout_marginBottom="28dp"
+        android:layout_marginBottom="32dp"
         android:contentDescription="@string/app_name" />
 
-    <com.google.android.material.button.MaterialButton
+    <Button
         android:id="@+id/btnTuner"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:minHeight="96dp"
-        android:text="🎵 টিউনার"
+        android:text="টিউনার"
         android:textSize="22sp"
         android:textAllCaps="false"
         android:contentDescription="টিউনার খুলুন" />
 
-    <com.google.android.material.button.MaterialButton
+    <Button
         android:id="@+id/btnMetro"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:minHeight="96dp"
         android:layout_marginTop="16dp"
-        android:text="🥁 মেট্রোনোম"
+        android:text="মেট্রোনোম"
         android:textSize="22sp"
         android:textAllCaps="false"
         android:contentDescription="মেট্রোনোম খুলুন" />
