@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.App" parent="Theme.AppCompat.NoActionBar">
+    <!-- Must be MaterialComponents — MaterialButton crashes under pure AppCompat theme -->
+    <style name="Theme.App" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="android:statusBarColor">#12141c</item>
         <item name="android:navigationBarColor">#12141c</item>
         <item name="android:windowBackground">#12141c</item>
         <item name="colorPrimary">#ffb020</item>
+        <item name="colorPrimaryVariant">#c98a10</item>
+        <item name="colorOnPrimary">#12141c</item>
+        <item name="colorSecondary">#7aa2ff</item>
+        <item name="android:textColorPrimary">#eef0f6</item>
     </style>
 </resources>
