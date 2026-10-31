@@ -2,21 +2,28 @@ package com.sangeetsahayak.app;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-/**
- * Native home only — no WebView here.
- * Opens WebActivity with tuner or metronome page.
- */
 public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        findViewById(R.id.btnTuner).setOnClickListener(v -> openPage("tuner"));
-        findViewById(R.id.btnMetro).setOnClickListener(v -> openPage("metro"));
+        try {
+            setContentView(R.layout.activity_main);
+            View tuner = findViewById(R.id.btnTuner);
+            View metro = findViewById(R.id.btnMetro);
+            if (tuner != null) {
+                tuner.setOnClickListener(v -> openPage("tuner"));
+            }
+            if (metro != null) {
+                metro.setOnClickListener(v -> openPage("metro"));
+            }
+        } catch (Exception e) {
+            Toast.makeText(this, "UI error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     private void openPage(String page) {
