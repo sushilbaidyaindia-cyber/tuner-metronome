@@ -78,13 +78,19 @@
   <div class="card bpm">
     <div class="label">গতি</div>
     <div><span class="num" id="bpmNum" aria-live="polite">100</span> <span class="unit">BPM</span></div>
-    <input type="range" id="bpm" min="30" max="300" value="100" aria-label="BPM">
+    <input type="range" id="bpm" min="30" max="700" value="100" aria-label="BPM">
     <div class="adj">
       <button id="m5" aria-label="৫ কমাও">−৫</button>
       <button id="m1" aria-label="১ কমাও">−১</button>
       <button id="p1" aria-label="১ বাড়াও">+১</button>
       <button id="p5" aria-label="৫ বাড়াও">+৫</button>
+      <button id="x2" aria-label="গতি দ্বিগুণ">×২</button>
+      <button id="x4" aria-label="গতি চৌগুণ">×৪</button>
     </div>
+    <label class="label" for="bpmType" style="margin-top:12px;display:block">BPM লিখে বসান (৩০–৭০০)</label>
+    <input type="number" id="bpmType" min="30" max="700" step="1" inputmode="numeric"
+           aria-label="BPM টাইপ করুন" placeholder="যেমন ১২০"
+           style="width:100%;padding:12px;font-size:18px;border-radius:10px;border:1px solid #333;background:#1a1d28;color:#eef0f6">
   </div>
 
   <button id="play" class="go">▶ শুরু</button>
@@ -256,11 +262,30 @@ function stopMetro(){
   beatEls.forEach(e=>e.classList.remove('act'));
   $('play').textContent='▶ শুরু'; $('play').classList.remove('on');
 }
-function setBpm(v){ bpm=Math.max(30,Math.min(300,Math.round(v))); $('bpm').value=bpm; $('bpmNum').textContent=bn(bpm); }
+function setBpm(v){
+  bpm = Math.max(30, Math.min(700, Math.round(Number(v) || 0)));
+  $('bpm').value = bpm;
+  $('bpmNum').textContent = bn(bpm);
+  try { $('bpmType').value = String(bpm); } catch (e) {}
+}
 $('play').onclick=()=>playing?stopMetro():startMetro();
 $('bpm').oninput=e=>setBpm(+e.target.value);
 $('m5').onclick=()=>setBpm(bpm-5); $('m1').onclick=()=>setBpm(bpm-1);
 $('p1').onclick=()=>setBpm(bpm+1); $('p5').onclick=()=>setBpm(bpm+5);
+$('x2').onclick=()=>setBpm(bpm*2);
+$('x4').onclick=()=>setBpm(bpm*4);
+function applyTypedBpm(){
+  var el=$('bpmType'); if(!el) return;
+  var v=parseInt(el.value,10);
+  if(isNaN(v)) return;
+  setBpm(v);
+  el.value=String(bpm);
+}
+$('bpmType').addEventListener('change', applyTypedBpm);
+$('bpmType').addEventListener('keydown', function(e){
+  if(e.key==='Enter'){ e.preventDefault(); applyTypedBpm(); }
+});
+
 
 /* শুরু */
 buildKeys(); buildOcts(); buildMatras(); buildBeats(); setBpm(100);
